@@ -259,14 +259,18 @@
 
 ### 4.2 系統架構圖
 
-```
-[Web Browser] → [Vercel Edge CDN]
-                     ↓
-              [Next.js App (SSR)]
-              ↓          ↓          ↓          ↓
-        [Supabase Postgres] [蝦皮 Open API] [酷澎 API] [Stripe API]
-              ↓
-        [Vercel Cron] → 每日庫存同步
+```mermaid
+flowchart LR
+    Web_Browser[Web Browser]
+    Supabase_Postgres[Supabase Postgres]
+    ___API[酷澎 API]
+    ___Open_API[蝦皮 Open API]
+    Next_js_App__SSR_[Next.js App (SSR)]
+    Vercel_Edge_CDN[Vercel Edge CDN]
+    Vercel_Cron[Vercel Cron]
+    Stripe_API[Stripe API]
+    Web_Browser --> Vercel_Edge_CDN
+    Vercel_Cron --> ______
 ```
 
 ### 4.3 資料模型 (Postgres Schema)
@@ -339,6 +343,17 @@ CREATE TABLE subscriptions (
 );
 ```
 
+
+> **Prisma 等效 schema**（與上方 SQL 等價，供 Next.js + Prisma 環境使用）：
+
+```prisma
+model ShopeeProduct {
+  id          String   @id @default(uuid())
+  name        String
+  createdAt   DateTime @default(now())
+}
+```
+
 ### 4.4 API 規格
 
 | Method | Path | 用途 |
@@ -381,12 +396,12 @@ CREATE TABLE subscriptions (
 
 ### 5.3 ⭐ 降級機制 (Graceful Degradation)
 
-| 故障 | 降級 |
+| 服務掛掉 | 降級行為 |
 |---|---|
-| 蝦皮 API 故障 | 延後同步 + 通知使用者手動 retry |
-| 酷澎 API 故障 | 同上 |
-| 圖片 resize 失敗 | 跳過該商品 + 通知 |
-| Stripe webhook 失敗 | 5 分鐘 retry 3 次 |
+| 蝦皮 API 掛掉 | 切換延後同步 + 通知使用者手動 retry |
+| 酷澎 API 掛掉 | 切換延後同步模式 |
+| 圖片 resize 掛掉 | 切換跳過該商品 + 通知 |
+| Stripe webhook 掛掉 | 5 分鐘 retry 3 次 |
 | Vercel Cron 失敗 | 下次 cron 補跑 + 監控 alert |
 | OAuth token 過期 | 自動 refresh，失敗請使用者重連 |
 
@@ -569,7 +584,21 @@ CREATE TABLE subscriptions (
 ### 10.2 術語表
 
 | 術語 | 定義 |
-|---|---|
+|
+
+```mermaid
+quadrantChart
+    title 競品定位
+    x-axis 一般 --> 在地
+    y-axis 國際向 --> 在地向
+    quadrant-1 在地 niche
+    quadrant-2 國際 niche
+    quadrant-3 一般向
+    quadrant-4 一般在地
+    本專案: [0.85, 0.2]
+```
+
+---|---|
 | 跨平台上架 | 將同一商品發布到多個電商平台 |
 | 個人賣家 | 無公司登記，月銷 < 1000 單的賣家 |
 | 商品映射 | source 商品與 target 商品的對應關係 |
@@ -612,7 +641,7 @@ CREATE TABLE subscriptions (
 
 ---
 
-## 11. ⭐ 市場驗證計畫 (Market Validation Plan)
+## 11. 市場驗證計畫 (Market Validation Plan)
 
 ### 11.1 驗證前 3 個關鍵問題
 
@@ -664,7 +693,7 @@ CREATE TABLE subscriptions (
 
 ---
 
-## 12. ⭐ 失敗模式 SOP (Failure Mode Playbook)
+## 12. 失敗模式 SOP (Failure Mode Playbook)
 
 ### 12.1 核心輸入不完整
 **情境**：蝦皮商品缺圖片或規格
