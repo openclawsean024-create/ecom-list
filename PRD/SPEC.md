@@ -1,30 +1,23 @@
-# 蝦皮個人賣家 CSV 批次上架助手 — 規格計劃書 v2.2.2 (sweet-spot-driven)
+# Ecom List — 規格書 v2.2.2
 
-> 版本：v2.2.2 (sweet-spot-driven rewrite)
-> 維護者：Sophia (CPO) for Sean
-> 對接技術：Alan (CTO) + Hermes Agent
-> 對接 Repo：https://github.com/openclawsean024-create/ecom-list
-> 對接現實：原版「5 平台 ERP」概念已被 SHOPLINE 600K 商家、Cyberbiz、91APP 內建佔；本版收斂為「**蝦皮個人賣家 CSV 批次上架助手**」
-> 最後更新：2026-07-19
+> **專案**：Ecom List（電商多平台快速上架工具）
+> **PRD 版本**：v2.2.2（sweet-spot rewrite, 從全電商平台紅海 pivot 到「蝦皮個人賣家 niche」）
+> **撰寫日期**：2026-07-19
+> **作者**：Sean（PRD specialist 批次 B 重寫）
+> **SSOT 位置**：`/home/sean/Program/ecom-list/PRD/SPEC.md`
+> **本地路徑**：`/home/sean/Program/ecom-list`
 
 ---
 
 ## 0. 改版摘要 (What's new in v2.2.2)
 
-依據「sweet spot 5 問體檢」（體檢分數 = 3/10，建議 kill），v2.2.2 把 PRD 從「**5 平台 ERP SaaS**」大幅收斂為「**蝦皮個人賣家 CSV 批次上架助手**」。這個重寫繞過了所有紅海：
-
-1. **紅海警訊**：SHOPLINE 600K 商家、Cyberbiz/91APP 已內建多平台、蝦皮店到店 NT$0 月費已綁死微型賣家
-2. **付費意願警訊**：台灣電商個人賣家 60% 月營業額 < NT$10 萬、ERP 月費 NT$299 是大負擔
-3. **0 員工警訊**：個體戶不會用 ERP、只要 CSV 一鍵轉檔
-
-**本版核心差異**：
-- §1.1：問題陳述從「5 平台 ERP」切到「**蝦皮個人賣家 0 員工每月 100 件上架**」
-- §1.3：定位為「**蝦皮 CSV 批次上架 + 庫存同步 + Markdown 商品描述產生**」（純前端 SPA）
-- §1.5：明確不做多平台 ERP、不做 SaaS 訂閱（用一次性 + 免費起步）、不做 API 串接
-- §3.1 MVP：縮減為「CSV 上傳 + 蝦皮格式轉檔 + Markdown 商品描述 + JSZip 下載」4 個核心
-- §7.2 ADR-005：為何切到蝦皮個人賣家而非 5 平台 ERP
-- §11：5 場蝦皮個人賣家訪談
-- §15：完整 sweet spot 體檢
+| v2.2.1 → v2.2.2 差異 | 為何改 | 對誰重要 |
+|---|---|---|
+| Sweet spot 從「全電商多平台一鍵上架」紅海（sweet=3）pivot 到 **「蝦皮個人賣家 × 月銷 50-500 單 × 想跨蝦皮/酷澎/淘寶/自家站」** | SHOPLINE 3 萬商家、Cyberbiz 2 萬、91APP 1.5 萬，三巨頭紅海 | 真正可贏的小眾 |
+| Persona 從「所有電商賣家」縮為「蝦皮個人賣家，單人/夫妻店，月銷 50-500 單，想跨平台但被 SHOPLINE 月費 NT$2,688 嚇到」 | 中小賣家佔台灣電商 75% | 縮小後 persona 明確 |
+| 核心功能從「全功能 ERP」變成 **「3 步驟跨平台上架：複製蝦皮商品 → 選目標平台 → 一鍵改格式上架」** | ERP 全功能要 2 年開發，個人賣家付不起 | MVP 2 個月可交付 |
+| 定價 pivot：從 NT$2,000/月 SaaS 變成 **「免費 5 商品/月 + NT$199/月 50 商品 + NT$499/月 無限」** | 個人賣家付費意願上限 NT$500/月 | 付費意願對得上 |
+| 驗證從「100 商家使用」改為「30 天內 5 個蝦皮個人賣家付費 + 20 個商品跨平台上架成功」 | 更小、更可反駁 | 兩週可驗證 |
 
 ---
 
@@ -32,237 +25,218 @@
 
 ### 1.1 問題陳述 (Problem Statement)
 
-> **Sweet spot 5 問 #1 警訊**：蝦皮台灣 80 萬賣家、其中 **65 萬是月營業額 < NT$10 萬的個人賣家 / 0 員工個體戶**，他們的需求是「我每天要上架 20-50 件商品到蝦皮，能不能 CSV 批次轉檔？」
+**核心問題**：台灣蝦皮個人賣家（單人/夫妻店，月銷 50-500 單）想跨平台到酷澎/淘寶/自家站，被「每平台都要重新上架 50-500 個商品」卡住。手工複製貼上一個商品要 10-15 分鐘，500 商品 = 100 小時以上。SHOPLINE/Cyberbiz/91APP 全功能 ERP 月費 NT$2,688-NT$30,000，個人賣家付不起且 90% 功能用不到。
 
-台灣電商市場結構高度兩極化：
-
-**頂端（5%）**：SHOPLINE / Cyberbiz / 91APP 客戶、月營業額 NT$100 萬+
-- 已被 3 大平台內建多平台功能佔領
-- 願付 NT$1,500-5,000/月
-- **這是紅海，我們不打**
-
-**底端（65%）**：蝦皮個人賣家、月營業額 < NT$10 萬、0 員工
-- 痛點：每天手動上架 20-100 件、每件 5-10 分鐘、Excel 編輯痛苦
-- 預算：< NT$300/月（很多 < NT$100/月）
-- 現有方案：蝦皮「大量上架」功能只能 1 次 100 件、且格式固定
-- **這是我們的甜蜜點**
-
-**痛點 A：手動上架耗時**
-- 蝦皮上架 1 件需填：標題/價格/庫存/分類/描述/規格/照片 7 欄
-- 平均 5-10 分鐘/件
-- 個人賣家每天 20-50 件 = 1.5-8 小時/天
-
-**痛點 B：Excel 編輯痛苦**
-- 用 Excel 編輯商品 → 複製貼上到蝦皮 → 格式跑掉
-- 蝦皮「大量上架」功能僅 CSV 上傳、但需符合蝦皮固定格式
-- 個體戶不會寫 VBA、不會用蝦皮 API
-
-**痛點 C：商品描述重複編輯**
-- 同一商品要在蝦皮 + Yahoo + Momo 各寫 1 次描述
-- Markdown 格式不會自動轉 HTML
-
-**現有方案對照**：
-| 方案 | 解決的痛點 | 沒解決的痛點 |
-|---|---|---|
-| SHOPLINE / Cyberbiz | 多平台同步 | NT$1,500-5,000/月、需綁定官網 |
-| 蝦皮「大量上架」| CSV 上傳 | 格式固定、不接受 Markdown、不支援庫存同步 |
-| 自己寫 VBA | Excel 自動 | 個體戶不會寫、平台格式常變 |
-| Excel + 手動複製 | 便宜 | 耗時、易錯 |
-| **我們** | **蝦皮 CSV 批次 + Markdown 轉換 + 庫存同步** | **無** |
-
-**Sweet spot 體檢發現**：「**蝦皮個人賣家 CSV 批次上架助手**」這個**低價位 + 高頻次 + 低進入門檻**的甜蜜點**沒有人專門做**。Google 搜尋「蝦皮 批次上架」前 5 頁都是蝦皮官方教學文，沒有第三方工具切入。
-
-**為何這個甜蜜點在台灣存在**：
-1. 蝦皮台灣 80 萬賣家中 65 萬是個人賣家、TAM 65 萬
-2. 蝦皮「大量上架」功能格式固定、不友善
-3. Markdown 商品描述是 2026 主流（蝦皮編輯器已支援 HTML）
-4. 純前端 SPA 開發成本低（NT$10 萬內可上線）
+**市場證據**：
+- 蝦皮台灣 2024 活躍賣家約 60 萬，其中個人賣家（無公司登記）約 45 萬（75%）
+- 月銷 50-500 單的「求生型賣家」約 15-20 萬
+- 「蝦皮 跨平台」「蝦皮 酷澎 上架」關鍵字 Threads 月發文 200+、Dcard 電商版 100+（粗估）
+- 痛點強度：8/10（每月新平台旺季都遇到，預估 4-6 次/年）
 
 ### 1.2 目標使用者 (User Personas)
 
-**Sweet spot 鎖定：蝦皮台灣個人賣家（0 員工、月營業額 < NT$10 萬）**
+**Primary persona — 阿明（35 歲台中蝦皮個人賣家）**：
+- 背景：原本上班族辭職全職蝦皮，主賣韓國飾品，月銷 300 單，毛利 25%
+- 痛點：聽說酷澎流量大但要重新上架 300 個商品，預估 50 小時
+- 現有 workaround：自己手動複製貼上，每天晚上 2 小時做了 2 個月才 30 商品
+- 付費意願：願意付 NT$199-NT$499/月節省時間（粗估）
+- AARRR：找得到 → 用得上 → 願意付 → 留下來
 
-| 角色 | 規模（台灣）| 月上架件數 | 痛點強度 | ARPU/年 | 為何是甜蜜點 |
-|---|---|---|---|---|---|
-| 🛍️ 蝦皮個人賣家（服飾/飾品）| ~20 萬 | 50-200 件 | 高（每天 1-3 小時）| NT$290 一次性 | 大市場、低付費意願 |
-| 📦 蝦皮代購/團購主 | ~5 萬 | 100-500 件 | 高（每天 3-8 小時）| NT$590 一次性 | 高頻次、高強度 |
-| 🎨 手作/原創商品賣家 | ~3 萬 | 20-50 件 | 中（每週上架）| NT$290 一次性 | 低頻、優質客戶 |
-| 🏪 蝦皮個體戶（雜貨/食品）| ~10 萬 | 30-100 件 | 中 | NT$290 一次性 | 穩定回購 |
-| ❌ 蝦皮企業戶（5%+）| ~15 萬 | 500+ 件 | — | — | **排除：已有 ERP** |
-| ❌ 自有官網品牌 | ~5K | — | — | — | **排除：SHOPLINE 紅海** |
-| ❌ Yahoo/Momo/PChome 賣家 | ~10 萬 | — | — | — | **排除：蝦皮是甜蜜點** |
-
-**目標族群 = 蝦皮個人賣家 4 種**，預估 TAM ~38 萬、付費率 5-10% = SAM 1.9-3.8 萬、SOM (首年) 500-1,500 用戶。
+**Secondary persona — 美琪（32 歲台北夫妻店）**：
+- 背景：夫妻兩人經營蝦皮 + 自家 IG shop，主賣母嬰用品，月銷 200 單
+- 痛點：想跨蝦皮/酷澎/淘寶/IG，3 平台手動同步庫存超累，常超賣
+- 付費意願：願意付 NT$499/月含庫存同步
 
 ### 1.3 核心價值主張 (Value Proposition)
 
-> **「Excel 編完商品 → 拖拉進來 → 蝦皮 CSV 一鍵產出 — 省 70% 上架時間。」**
+> **「蝦皮個人賣家專用，3 步驟把現有商品一鍵上架到酷澎、淘寶、自家站，月省 50 小時。」**
 
-**與競品的差異化（一行）**：
-
-| 競品 | 他們的定位 | 我們的差異 |
-|---|---|---|
-| 蝦皮「大量上架」| 蝦皮官方功能 | **Markdown 商品描述 + 庫存同步 + 圖片 resize**，官方沒有 |
-| SHOPLINE / Cyberbiz | 多平台 ERP | **NT$290 一次性 vs NT$1,500/月**、蝦皮個人賣家不用綁官網 |
-| 商用 ERP（cHello 等）| 庫存管理 | **CSV 批次上架助手**，不做庫存管理 |
-| Excel / Google Sheets | 編輯商品 | **一鍵轉蝦皮 CSV**，不用複製貼上 |
-| 蝦皮 API 串接 | 自動化上架 | **純前端無 API**，個體戶也能用 |
-
-**一句話差異化**：「**蝦皮個人賣家的 Excel 轉 CSV 一鍵工具 — NT$290 一次性、免費版 5 件/天。**」
+- **For** 蝦皮個人賣家（單人/夫妻店，月銷 50-500 單）
+- **Who** 想跨平台但被 SHOPLINE 月費嚇到
+- **Our product is** 一個蝦皮商品 → 多平台一鍵上架工具
+- **That** 10 分鐘內完成 500 商品跨平台上架
+- **Unlike** SHOPLINE/Cyberbiz/91APP（全功能 ERP、月費 NT$2,688-NT$30,000）、手工複製貼上（10-15 分/商品）
+- **Our product** 用「複製蝦皮 → 選平台 → 一鍵改格式」3 步驟、月費 NT$199 起、個人賣家可負擔
 
 ### 1.4 商業目標 (KPIs / OKRs)
 
-**Sweet spot 體檢提醒**：原 v2.2.1 的「5 平台 + ERP 月訂閱 NT$299」對個體戶太貴，我們收斂為：
-
-| 時間 | 目標 | 量化指標 | 驗證方式 |
-|---|---|---|---|
-| M1-M3 驗證 | 5 場蝦皮個人賣家訪談 + 1 Landing Page | 100 訪客 / 50% 試用 | §11 訪談 SOP |
-| M4-M6 試營運 | 500 活躍用戶 + 50 付費 | NT$14.5K 一次性 | Stripe webhook |
-| M7-M12 擴張 | 2,000 活躍 + 300 付費 + 20 企業用戶 | NT$87K 一次性 + NT$60K 企業 = NT$147K | 客戶留存 ≥ 50% |
-| M13-M18 規模化 | 5,000 活躍 + 1,000 付費 + 100 企業 | NT$290K 一次性 + NT$300K 企業 = NT$590K | 推薦係數 ≥ 0.2 |
-
-**Unit Economics（修正版）**：
-- LTV（個人）：NT$290 一次性 + NT$290 升級版 = NT$580
-- LTV（企業）：NT$4,990/年 × 3 年 = NT$14,970
-- 加權 LTV：NT$1,500
-- CAC：NT$50（蝦皮論壇 + Threads + 口碑）
-- LTV/CAC = 30（健康）
+| 時間 | 指標 | 目標 |
+|---|---|---|
+| 30 天 pilot | 付費商家 | ≥ 5 |
+| 30 天 pilot | 跨平台上架成功商品 | ≥ 20 |
+| 60 天 | 留存 D30 | ≥ 35% |
+| 90 天 | MRR | NT$ 25,000（≈ 80 訂閱 NT$199 + 20 訂閱 NT$499） |
+| 180 天 | 平台支援 | 4 平台（蝦皮、酷澎、淘寶、自家站） |
 
 ### 1.5 ⭐ Non-Goals (明確不做)
 
-依據 sweet spot 體檢「紅海排除」原則：
-
-| Non-Goal | 為何不做 | 紅海證據 |
-|---|---|---|
-| ❌ 不做**5 平台 ERP** | SHOPLINE 600K、Cyberbiz/91APP 已內建 | SHOPLINE 月費 NT$1,500 起 |
-| ❌ 不做**蝦皮企業戶** | 蝦皮企業戶已有完整 ERP 工具 | 蝦皮企業戶 15 萬、月費 NT$5,000+ |
-| ❌ 不做**API 自動上架** | 個體戶不會用 API、維護成本高 | 蝦皮 API 限流 + 認證複雜 |
-| ❌ 不做**Yahoo/Momo/PChome** | 蝦皮已是甜蜜點、擴張需另開戰場 | Yahoo 拍賣 5 萬賣家、Momo 3 萬 |
-| ❌ 不做**月訂閱制** | 個人賣家不願月付、習慣一次性 | Spotify for Podcast 模式驗證過 |
-| ⏸ **先驗證再開發**：本 PRD 採用「先做 §11 驗證計畫 60 天，驗證通過才動 §3.1 MVP 開發」 | sweet spot = 3 偏低，需先驗證 | 5 場訪談 + 1 Landing Page |
+> ⚠️ **Sweet spot 提醒**：全電商 ERP 紅海 sweet=3，本 PRD 明確排除：
+- ❌ **不做全功能 ERP**（庫存/訂單/會員/行銷/分析…）（與 SHOPLINE 紅海對打必死）
+- ❌ **不做大型品牌客戶**（單月 NT$30,000+ 方案，會被 SHOPLINE 業務吃掉）
+- ❌ **不做 Shopify/WooCommerce 國際向**（pivot 失敗案例：蝦皮國際賣家只佔 5%）
+- ❌ **不做 AI 自動生成商品文案**（成本超支、無法驗證）
+- ❌ **不做 iOS/Android app v1**（個人賣家用桌機/筆電上架）
+- ❌ **不做物流/金流串接**（超賣問題太多，蝦皮/酷澎已有）
 
 ---
 
-## 2. 使用者流程圖
+## 2. 使用者場景與流程
 
-```mermaid
-flowchart TD
-    A[蝦皮賣家在 Dcard 看到工具] --> B[點擊 Landing Page]
-    B --> C[看 30 秒 Demo 影片]
-    C --> D{選擇方案}
-    D -->|免費版 5 件/天| E[立即使用，無需註冊]
-    D -->|付費版 NT$290 一次性| F[Stripe Checkout]
-    D -->|企業版 NT$4,990/年| F
-    E --> G[拖拉 Excel 檔]
-    F --> G
-    G --> H[系統解析 + 圖片 resize + Markdown 轉 HTML]
-    H --> I[蝦皮 CSV 預覽]
-    I --> J{確認?}
-    J -->|是| K[下載蝦皮 CSV + 商品照片 ZIP]
-    J -->|否| L[編輯欄位重新轉換]
-    K --> M[到蝦皮後台「大量上架」上傳]
+### 2.1 使用者流程圖
+
+```
+[蝦皮賣家登入] → [OAuth 授權蝦皮賣家中心]
+        ↓
+[選擇要跨平台的蝦皮商品（可多選）]
+        ↓
+[選擇目標平台：酷澎 / 淘寶 / 自家站]
+        ↓
+[系統自動抓蝦皮商品資料 → 轉換格式 → 上架]
+        ↓
+[顯示成功 / 失敗 → 失敗需手動修正（圖片/規格）]
+        ↓
+[庫存自動同步（每日 cron）]
 ```
 
-### 2.1 關鍵用戶故事 (User Stories)
+### 2.2 關鍵用戶故事 (User Stories)
 
-**Story 1：拖拉 Excel 上傳 (P0)**
-> **Why this priority**：MVP 入口，沒有這個就沒營收。
-> **Independent test**：可用 1 份 50 件 mock Excel 測試。
+#### US-001：蝦皮商品一鍵複製到酷澎
+> As 阿明（蝦皮個人賣家）
+> I want 選 50 個蝦皮飾品商品 → 一鍵上架到酷澎
+> So that 不用花 10 小時手動複製貼上
 
-```gherkin
-Given 我是蝦皮個人賣家
-When 我拖拉 1 份 Excel (.xlsx) 到網頁
-Then 30 秒內看到商品列表預覽
-```
+**Acceptance**：
+- 蝦皮 OAuth 授權完成
+- 選 50 個蝦皮商品 + 目標「酷澎」
+- 10 分鐘內 50 商品上架成功（含自動轉換標題/規格/圖片）
 
-**Story 2：蝦皮 CSV 產生 (P0)**
-> **Why this priority**：核心價值，沒有這個就只是 Excel 編輯器。
-> **Independent test**：可下載 CSV 並驗證格式符合蝦皮「大量上架」要求。
+#### US-002：跨平台庫存自動同步
+> As 美琪（夫妻店）
+> I want 蝦皮賣出 1 個 → 酷澎自動減 1
+> So that 不會超賣
 
-```gherkin
-Given 我已上傳 Excel
-When 我點「產生蝦皮 CSV」
-Then 30 秒內下載 ZIP 檔（內含蝦皮 CSV + 商品照片）
-```
+**Acceptance**：
+- 每日 cron 同步蝦皮/酷澎/淘寶庫存
+- 庫存為 0 時自動下架其他平台
+- 含錯誤通知 email
 
-**Story 3：Markdown 描述轉換 (P0)**
-> **Why this priority**：與蝦皮「大量上架」差異化核心。
-> **Independent test**：可上傳 Markdown 測試 HTML 輸出。
+#### US-003：失敗商品手動修正
+> As 阿明
+> I want 上架失敗時顯示原因 + 一鍵修正
+> So that 不會卡住全部
 
-```gherkin
-Given 我的 Excel 有「Markdown 描述」欄
-When 我下載蝦皮 CSV
-Then 商品描述已自動轉 HTML（含粗體/連結/列表）
-```
+**Acceptance**：
+- 失敗原因（圖片過大、規格不符、分類錯誤）明確顯示
+- 提供「重新編輯」按鈕回到單商品編輯
+- 修正後可重試上架
 
-**Story 4-10 邊界場景**：
-- Excel 格式錯誤（提示用戶修正欄位）
-- 蝦皮 CSV 欄位對應失敗（提供欄位對應介面）
-- 圖片太大（自動 resize 到蝦皮要求 1MB 內）
-- SKU 重複（自動偵測並提示）
-- 多語言描述（v2）
+#### US-004：升級方案
+> As 阿明
+> I want 從免費升級 NT$199/月拿 50 商品額度
+> So that 解鎖更多跨平台額度
 
-### 2.2 邊界場景 (Edge Cases)
+**Acceptance**：
+- 點升級 → Stripe Checkout NT$199/月
+- 訂閱生效立即可上架 50 商品
+- 月底自動續訂 + email 通知
 
-| 邊界場景 | 觸發條件 | 應對 |
-|---|---|---|
-| Excel 是舊版 .xls | SheetJS 不支援 | 提示用戶另存 .xlsx |
-| 商品照片超過 5MB | 蝦皮上限 | 自動 resize + 壓縮 |
-| 蝦皮分類選擇錯誤 | 分類不對 | 提示用戶選正確分類 |
-| 庫存 = 0 仍上架 | 用戶設定 | 仍產生 CSV 但加警示 |
-| Markdown 有外連圖 | 自動下載但保留 URL | 提供「下載到本地」選項 |
+### 2.3 邊界場景 (Edge Cases)
+
+| 場景 | 處理 |
+|---|---|
+| 蝦皮 OAuth token 過期 | 自動 refresh + 失敗通知重連 |
+| 酷澎分類不對 | 自動建議最近似分類 + 允許手動選 |
+| 圖片解析度不符 | 自動 resize + 警告 |
+| 蝦皮商品被下架 | 自動從清單移除 + 通知 |
+| 商品規格缺貨 | 允許部分規格上架 + 標示 |
+| 跨平台庫存 race condition | 每日 cron + 預留 buffer（庫存 5 → 同步 4） |
+| 賣家想刪除帳號 | 一鍵匯出所有上架紀錄 + 刪除 OAuth |
 
 ---
 
 ## 3. 功能性需求 (Functional Requirements)
 
-### 3.1 MVP（必做，P0）
+### 3.1 MVP（必做，P0；sweet-spot redefinition）
 
-> **Sweet spot 5 問 #3 MVP 縮減**：原 v2.2.1 MVP 有 14 個功能，sweet spot 偏低時應砍到 4 個核心。
+#### FR-001：蝦皮 OAuth 授權（MUST）
+- 蝦皮 Open Platform v2 OAuth 2.0
+- 授權後可讀取賣家所有商品 + 庫存
+- Token 安全存 Supabase（加密）
 
-| # | 功能 | 為何在 MVP | 驗證指標 |
-|---|---|---|---|
-| F-01 | **Landing Page + 30 秒 Demo** | 唯一獲客入口 | 100 訪客 / 50% 試用 |
-| F-02 | **Excel 拖拉上傳 + 解析** | 核心價值 A | 30 秒完成、上傳成功率 ≥ 95% |
-| F-03 | **蝦皮 CSV 一鍵產生 + JSZip 下載** | 核心價值 B | 蝦皮「大量上架」可上傳 |
-| F-04 | **Markdown 描述 → HTML 轉換** | 差異化 | 10 種語法支援（粗體/連結/列表）|
+#### FR-002：蝦皮商品列表 + 多選（MUST）
+- 顯示賣家所有蝦皮商品（分頁 + 搜尋）
+- 多選 checkbox + 全選
+- 顯示商品名稱/價格/庫存/分類
 
-**明確不在 MVP 的功能**：
-- ❌ Yahoo/Momo/PChome 支援
-- ❌ 多平台 ERP 同步
-- ❌ 庫存管理後台
-- ❌ AI 商品描述生成（v2）
-- ❌ 蝦皮 API 自動上架
+#### FR-003：目標平台選擇（MUST）
+- v1 支援：蝦皮（已存在）、酷澎（新增）
+- v2 新增：淘寶台灣、自家站（Shopify lite）
+- UI 顯示平台 icon + 連線狀態
+
+#### FR-004：商品格式自動轉換（MUST）
+- 蝦皮商品 → 目標平台格式 mapping
+- 標題：保留原文
+- 規格：欄位 mapping（如「顏色」→ 「Color」）
+- 圖片：自動 resize（最大 2000x2000） + 上傳到目標平台
+- 價格：可選自動換算匯率或固定加成 %
+
+#### FR-005：一鍵上架（MUST）
+- 批次上架（最多 50 商品 / 次）
+- 進度條顯示
+- 完成後顯示成功/失敗清單
+- 失敗提供重試按鈕
+
+#### FR-006：庫存自動同步（MUST）
+- 每日 cron（Vercel Cron 或 Supabase scheduled function）
+- 蝦皮 → 目標平台單向同步（庫存為主）
+- 庫存為 0 時自動下架其他平台
+- 同步紀錄可查詢
+
+#### FR-007：訂閱方案（MUST）
+- 免費：5 商品/月、1 個目標平台
+- NT$199/月：50 商品/月、1 個目標平台
+- NT$499/月：無限商品、2 個目標平台 + 庫存同步
+
+#### FR-008：使用量統計（MUST）
+- 顯示本月已上架商品數
+- 顯示本月剩餘額度
+- 顯示同步紀錄（時間/平台/商品/結果）
+
+#### FR-009：失敗通知（MUST）
+- 同步失敗時 email 通知
+- 站內通知中心
+- 含失敗原因 + 修正建議
 
 ### 3.2 v2（加值，P1）
 
-| 功能 | 為何 v2 | 預估時程 |
-|---|---|---|
-| F-05 庫存 CSV 同步更新 | 庫存同步是高頻痛點 | M7-M9 |
-| F-06 多語言商品描述（英/日）| 代購/團購主市場 | M10-M12 |
-| F-07 AI 商品描述生成 | 加值、留存 | M13-M15 |
-| F-08 蝦皮 API 自動上架（企業版） | 企業客戶付費 | M16-M18 |
+- 淘寶台灣、自家站（Shopify lite）支援
+- 雙向庫存同步（蝦皮↔酷澎）
+- 自動回應客服訊息
+- 簡易數據儀表板（哪些平台賣最好）
 
 ### 3.3 v3（探索，P2）
 
-| 功能 | 為何 v3 |
-|---|---|
-| F-09 Yahoo/Momo/PChome 支援 | 擴張市場 |
-| F-10 簡易 ERP（庫存 + 訂單）| 與蝦皮後台競爭 |
-| F-11 蝦皮直播 + 商品綁定 | 直播電商成長 |
+- AI 商品文案優化（標題/描述 SEO）
+- 競品價格監控
+- 多語系（英文/日文，給轉外銷賣家）
+- Shopify app store 上架
 
 ### 3.4 ⭐ Acceptance Criteria (Given/When/Then)
 
-1. **AC-01**：Given 我點 Landing Page, When 我看 Demo 影片 30 秒, Then 我看到 Excel → 蝦皮 CSV 全流程
-2. **AC-02**：Given 我拖拉 Excel 50 件商品, When 解析完成, Then 30 秒內看到預覽列表
-3. **AC-03**：Given 我點「產生蝦皮 CSV」, When 30 秒轉檔完成, Then 我下載 ZIP 含蝦皮 CSV + 商品照片
-4. **AC-04**：Given 我用 Markdown 描述「**精選**商品 [連結](https://)」, When 轉換完成, Then HTML 含 `<b>` 與 `<a>` 標籤
-5. **AC-05**：Given 商品照片 5MB, When 轉檔完成, Then 自動 resize 到蝦皮要求 ≤ 1MB
-6. **AC-06**：Given Excel 欄位缺失, When 上傳, Then 提示用戶缺哪些欄位
-7. **AC-07**：Given SKU 重複, When 偵測完成, Then 列出重複項目 + 提供合併選項
-8. **AC-08**：Given 我是付費用戶, When 我下載, Then 無浮水印 + 蝦皮 CSV 含完整欄位
-9. **AC-09**：Given 庫存 = 0, When 產生 CSV, Then 仍上架但加「⚠️ 庫存 0」警示
-10. **AC-10**：Given 我推薦朋友成功, When 朋友付費, Then 我得 NT$50 + 朋友得 NT$50 折價
+#### AC-FR-005：一鍵上架
+**Given** 阿明選 50 個蝦皮飾品 + 目標「酷澎」
+**When** 點「一鍵上架」
+**Then** 10 分鐘內完成，成功上架 ≥ 45 個（允許 10% 失敗因分類/規格），失敗顯示明確原因
+
+#### AC-FR-006：庫存同步
+**Given** 蝦皮賣出 1 個飾品（庫存 10 → 9）
+**When** 每日 cron 執行
+**Then** 24h 內酷澎庫存同步更新（10 → 9），庫存為 0 時自動下架
+
+#### AC-FR-007：訂閱升級
+**Given** 阿明在免費版已用 5 個商品額度
+**When** 點升級 NT$199/月
+**Then** Stripe Checkout 完成後，額度提升到 50 商品 + 可上架
 
 ---
 
@@ -270,81 +244,117 @@ Then 商品描述已自動轉 HTML（含粗體/連結/列表）
 
 ### 4.1 技術棧 (Tech Stack)
 
-| 層 | 選用 | 為何 | 替代方案 |
-|---|---|---|---|
-| Excel 解析 | SheetJS (xlsx) | 純前端、Sean 已有 | Node.js xlsx |
-| 蝦皮 CSV 產生 | Papa Parse | 純前端、CSV 標準 | csv-stringify |
-| 圖片 resize | browser-image-compression | 純前端、保留 EXIF | sharp |
-| Markdown → HTML | marked.js | 純前端、輕量 | remark |
-| JSZip 下載 | JSZip + FileSaver.js | 純前端 | zip.js |
-| Landing Page | Vercel + Next.js | 已有 | Hugo |
-| 付款 | Stripe Checkout | 標準 | 藍新 |
-| 認證（付費用戶）| Email magic link | 不需密碼 | Auth0 |
+| 層 | 選擇 | 理由 |
+|---|---|---|
+| Frontend | Next.js 16 + Tailwind v3 | Sean 熟悉、RWD 簡單 |
+| Backend | Next.js API routes + Supabase | Postgres + Auth + Storage + Cron 一站式 |
+| Database | Supabase Postgres | free tier 500MB |
+| Auth | Supabase Auth (email + Google) | 免費 |
+| E-commerce API | 蝦皮 Open Platform v2 | OAuth + 商品/庫存 CRUD |
+| E-commerce API | 酷澎 Open API（Coupang Partners / Wing） | 台灣可用 |
+| Payment | Stripe Checkout / Subscription | NT$199-NT$499 月訂閱 |
+| Hosting | Vercel | Sean 慣用 |
+| Cron | Vercel Cron Jobs | 免費 |
+| Email | Resend | free 3000/月 |
 
 ### 4.2 系統架構圖
 
-```mermaid
-graph TB
-  subgraph "純前端 SPA (Vercel + Next.js)"
-    LP[Landing Page]
-    UPLOAD[Excel 上傳 + 解析]
-    TRANS[CSV 轉換 + Markdown → HTML]
-    IMG[圖片 resize]
-    DL[JSZip 下載]
-  end
-  subgraph "第三方"
-    STR[Stripe Checkout]
-    RESEND[Resend Email]
-  end
-  subgraph "Supabase"
-    AUTH[Auth magic link]
-    DB[(Postgres<br/>用戶 + 付費紀錄)]
-  end
-
-  LP --> UPLOAD
-  UPLOAD --> TRANS
-  TRANS --> IMG
-  TRANS --> DL
-  LP --> STR
-  STR -->|webhook| DB
-  AUTH --> DB
+```
+[Web Browser] → [Vercel Edge CDN]
+                     ↓
+              [Next.js App (SSR)]
+              ↓          ↓          ↓          ↓
+        [Supabase Postgres] [蝦皮 Open API] [酷澎 API] [Stripe API]
+              ↓
+        [Vercel Cron] → 每日庫存同步
 ```
 
 ### 4.3 資料模型 (Postgres Schema)
 
-```yaml
-# Postgres Schema
-users:
-  id: uuid PK
-  email: text
-  paid_until: date  # 企業版
-  payment_type: select  # free / one-time / enterprise
-  referral_code: text
+```sql
+-- 用戶
+CREATE TABLE users (
+  id UUID PRIMARY KEY REFERENCES auth.users(id),
+  email TEXT UNIQUE NOT NULL,
+  plan TEXT DEFAULT 'free',  -- free / pro_199 / pro_499
+  stripe_customer_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
-payments:
-  id: uuid PK
-  user_id: uuid FK
-  amount_ntd: int
-  type: select  # one-time-290 / enterprise-4990
-  stripe_charge_id: text
-  paid_at: timestamp
+-- 蝦皮 OAuth token（加密）
+CREATE TABLE shopee_tokens (
+  user_id UUID PRIMARY KEY REFERENCES users(id),
+  shop_id BIGINT NOT NULL,
+  access_token_encrypted TEXT NOT NULL,
+  refresh_token_encrypted TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
 
-usage_logs:
-  id: uuid PK
-  user_id: uuid FK
-  csv_generated: int
-  items_uploaded: int
-  date: date
+-- 酷澎 OAuth token（加密）
+CREATE TABLE coupang_tokens (
+  user_id UUID PRIMARY KEY REFERENCES users(id),
+  vendor_id TEXT NOT NULL,
+  access_token_encrypted TEXT NOT NULL,
+  refresh_token_encrypted TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 商品對應（蝦皮 → 酷澎）
+CREATE TABLE product_mappings (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  source_platform TEXT NOT NULL,  -- shopee
+  source_product_id BIGINT NOT NULL,
+  target_platform TEXT NOT NULL,  -- coupang
+  target_product_id TEXT,
+  status TEXT DEFAULT 'pending',  -- pending / active / failed / removed
+  last_synced_at TIMESTAMPTZ,
+  error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 同步紀錄
+CREATE TABLE sync_logs (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  mapping_id UUID REFERENCES product_mappings(id),
+  sync_type TEXT NOT NULL,  -- create / update / remove
+  result TEXT NOT NULL,  -- success / failed
+  error_message TEXT,
+  synced_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 訂閱
+CREATE TABLE subscriptions (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  stripe_subscription_id TEXT,
+  plan TEXT NOT NULL,  -- pro_199 / pro_499
+  monthly_amount_cents INT,
+  status TEXT DEFAULT 'active',
+  current_period_end TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 ```
 
 ### 4.4 API 規格
 
 | Method | Path | 用途 |
 |---|---|---|
-| POST | /api/leads | Email 收集 |
-| POST | /api/stripe/webhook | 付款成功 |
-| POST | /api/usage/log | 用量記錄（付費用戶） |
-| GET | /api/users/me | 用戶資料 |
+| GET | /api/auth/shopee | 蝦皮 OAuth 起點 |
+| GET | /api/auth/shopee/callback | 蝦皮 OAuth callback |
+| GET | /api/auth/coupang | 酷澎 OAuth 起點 |
+| GET | /api/auth/coupang/callback | 酷澎 OAuth callback |
+| GET | /api/products/shopee | 列出蝦皮商品 |
+| POST | /api/products/cross-list | 批次跨平台上架 |
+| GET | /api/products/mappings | 列出商品對應 |
+| POST | /api/sync/inventory | 手動觸發庫存同步 |
+| GET | /api/sync/logs | 同步紀錄 |
+| POST | /api/checkout | 建立 Stripe Checkout |
+| POST | /api/stripe/webhook | 處理 Stripe 事件 |
+| GET | /api/me/usage | 我的使用量 |
 
 ---
 
@@ -352,32 +362,40 @@ usage_logs:
 
 ### 5.1 性能指標
 
-- Excel 50 件解析 < 10 秒
-- CSV 產生 < 5 秒
-- 圖片 resize 100 張 < 30 秒
-- Landing Page LCP < 1.5 秒
+| 指標 | 目標 |
+|---|---|
+| 首頁 TTFB | < 800ms |
+| 蝦皮商品列表 API | < 1s (50 商品 / page) |
+| 批次上架 50 商品 | < 10 分鐘（含圖片 resize + 上傳） |
+| 庫存同步 cron | < 5 分鐘（50 商品） |
+| Lighthouse Performance | ≥ 85 |
 
 ### 5.2 安全與隱私
 
-- **100% 純前端處理**：Excel + 圖片不上傳、純瀏覽器處理
-- **個資最小化**：僅存 Email、不存商品資料
-- **Stripe PCI DSS**：信用卡完全不在我們系統
-- **DRM 警示**：使用條款明確禁止未授權商品上架
+- HTTPS 全站
+- OAuth token AES-256 加密存 DB（Supabase Vault 或 app-level encryption）
+- Supabase RLS：用戶只可讀自己的資料
+- Stripe token 不存本地
+- 個資聲明：蝦皮/酷澎個資委外處理
+- GDPR/PIPA：可要求匯出 / 刪除
 
-### 5.3 ⭐ 降級機制
+### 5.3 ⭐ 降級機制 (Graceful Degradation)
 
-| 故障情境 | 降級方案 |
+| 故障 | 降級 |
 |---|---|
-| Stripe 掛了 | 匯款 + Email 確認 |
-| Vercel 掛了 | Cloudflare Pages 鏡像 |
-| SheetJS 解析失敗 | 提供 Excel 範本下載 |
-| 圖片 resize 失敗 | 保留原圖但加警示 |
+| 蝦皮 API 故障 | 延後同步 + 通知使用者手動 retry |
+| 酷澎 API 故障 | 同上 |
+| 圖片 resize 失敗 | 跳過該商品 + 通知 |
+| Stripe webhook 失敗 | 5 分鐘 retry 3 次 |
+| Vercel Cron 失敗 | 下次 cron 補跑 + 監控 alert |
+| OAuth token 過期 | 自動 refresh，失敗請使用者重連 |
 
 ### 5.4 擴展性
 
-- 用戶 1K → 5K：純前端 SPA 處理能力足夠
-- 用戶 5K+：需加 CDN 加速
-- 企業用戶：API 限流 + 專屬 Slack channel
+- 用戶數：v1 100 → v2 1000 → v3 10000
+- 商品數/用戶：平均 200，總 20000 商品映射（DB 輕）
+- 流量：Vercel free 100GB/月，足夠 1k MAU
+- DB：Supabase free 500MB → Pro $25/月 8GB（用戶達 500 再升）
 
 ---
 
@@ -385,15 +403,30 @@ usage_logs:
 
 ### 6.1 v1 MVP DoD
 
-- [ ] Landing Page 上線 + 30 秒 Demo 影片
-- [ ] Excel 拖拉上傳 + SheetJS 解析
-- [ ] 蝦皮 CSV 一鍵產生（符合蝦皮「大量上架」格式）
-- [ ] Markdown 描述 → HTML 轉換（marked.js）
-- [ ] 圖片自動 resize 到蝦皮要求
-- [ ] JSZip 下載（CSV + 照片）
-- [ ] Stripe Checkout NT$290 一次性 + NT$4,990 企業年
-- [ ] 5 場蝦皮個人賣家訪談 + 10 家付費意願書面
-- [ ] 蝦皮論壇 30 則 UGC
+- [ ] 蝦皮 OAuth 授權完成
+- [ ] 蝦皮商品列表 + 多選 UI 完成
+- [ ] 酷澎 OAuth 授權完成
+- [ ] 蝦皮 → 酷澎商品格式轉換完成
+- [ ] 一鍵上架（批次 50 商品）完成
+- [ ] 庫存每日同步 cron 完成
+- [ ] 庫存為 0 自動下架完成
+- [ ] 訂閱方案（free / NT$199 / NT$499）完成
+- [ ] Stripe Checkout / Subscription 完成
+- [ ] 使用量統計頁面完成
+- [ ] 失敗通知（email + 站內）完成
+- [ ] RWD 1440/768/390 三 viewport 驗證
+- [ ] Lighthouse Performance ≥ 85
+- [ ] 30 天 pilot 招募 ≥ 5 人
+- [ ] 30 天內 5 付費 + 20 商品跨平台上架成功
+
+### 6.2 上線閘門
+
+- [ ] Pilot 達標（5 付費 + 20 跨平台）
+- [ ] Stripe live mode 切換
+- [ ] Notion 狀態 → 已上線
+- [ ] Vercel custom domain 設定
+- [ ] Supabase production project 切換
+- [ ] 1 週監控期（D1, D7 留存）
 
 ---
 
@@ -401,60 +434,48 @@ usage_logs:
 
 ### 7.1 風險表 (🔴/🟠/🟡)
 
-| 風險 | 等級 | 機率 | 影響 | 對沖 |
-|---|---|---|---|---|
-| 蝦皮改變 CSV 格式 | 🔴 | 中 | 高 | 監控蝦皮公告 + 1 週內更新 |
-| 蝦皮官方做類似工具 | 🟠 | 中 | 高 | 純前端 + Markdown 護城河 |
-| 個體戶付費率 < 1% | 🟠 | 高 | 高 | 免費版 5 件/天 + 付費版 NT$290 |
-| Excel 解析錯誤 | 🟡 | 中 | 中 | 提供範本 + 欄位對應介面 |
-| 圖片 resize 失真 | 🟡 | 中 | 低 | 提供「不 resize」選項 |
+| ID | 風險 | 機率 | 影響 | 等級 | 緩解 |
+|---|---|---|---|---|---|
+| R-1 | 蝦皮個人賣家市場付費意願低 | 🟠 M | 🔴 H | **HIGH** | pilot 5 付費是驗證門檻，未達 pivot 到「小型品牌」或 archive |
+| R-2 | SHOPLINE 推出 NT$299/月低階方案 | 🟡 M | 🔴 H | MED | 維持「個人賣家專屬 + 3 步驟極簡」差異化 |
+| R-3 | 蝦皮 Open API 變更 / 收費 | 🟠 M | 🟠 M | MED | 監控公告 + 抽象化 adapter layer |
+| R-4 | 酷澎 API 限制（台灣 vendor 審核嚴格） | 🟠 M | 🔴 H | **HIGH** | 預先申請 vendor 帳號，無法取得則先做蝦皮 → 自家站 |
+| R-5 | 超賣問題導致客訴 | 🟠 M | 🟠 M | MED | 預留 buffer（庫存 5 → 同步 4）+ email 警告 |
+| R-6 | Stripe 抽成 + 跨國成本 | 🟢 L | 🟢 L | LOW | 抽成 2.9% + NT$10，可承受 |
+| R-7 | Pilot 招募不到 5 人 | 🟠 M | 🔴 H | **HIGH** | Threads / Dcard / PTT 主動 po 文 3 週 |
+| R-8 | 圖片智慧財產權爭議 | 🟢 L | 🟠 M | LOW | 使用者自負責任聲明 + ToS |
 
 ### 7.2 ⭐ ADR (Architecture Decision Records)
 
-**ADR-001：純前端 SPA 而非後端處理**
-- 決策：Excel + 圖片不上傳、純瀏覽器處理
-- 理由：個體戶在意隱私 + 開發成本低
-- 替代方案：Node.js 後端處理
-- 何時反轉：需 AI 商品描述生成時
+#### ADR-001：v1 只做蝦皮 → 酷澎單向
+**決策**：v1 僅做蝦皮 OAuth + 酷蓬 OAuth，庫存單向同步
+**理由**：雙向同步 race condition 複雜度太高，單向 80% 解決問題
+**取捨**：超賣風險 5%，email 警告補救
 
-**ADR-002：SheetJS 而非 Node.js xlsx**
-- 決策：SheetJS 純前端解析
-- 理由：免費 + Sean 已有 SheetJS 經驗
-- 替代方案：ExcelJS（後端）
-- 何時反轉：Excel 解析需複雜邏輯時
+#### ADR-002：蝦皮 Open Platform v2 而非 scraping
+**決策**：用蝦皮官方 Open Platform v2
+**理由**：scraping 違反 ToS 且不穩定
+**取捨**：需申請成為蝦皮開發者，註冊時間 1-2 週
 
-**ADR-003：一次性收費 NT$290 而非月訂閱**
-- 決策：NT$290 一次性（個人）+ NT$4,990/年（企業）
-- 理由：個體戶不願月付、習慣一次性
-- 替代方案：月訂閱 NT$49/月
-- 何時反轉：客戶要求月付時
+#### ADR-003：酷蓬 Coupang Partners API
+**決策**：用 Coupang Partners 或 Wing API
+**理由**：官方支援，台灣可用
+**取捨**：需 vendor 帳號審核（風險 R-4）
 
-**ADR-004：⭐ 為何只做蝦皮而非 5 平台？**
-- 決策：只做蝦皮 1 平台
-- 理由：
-  1. SHOPLINE 600K、Cyberbiz/91APP 已內建多平台 — 紅海
-  2. 蝦皮台灣 80 萬賣家、其中 65 萬是個人賣家 — TAM 65 萬
-  3. Yahoo 拍賣 5 萬、Momo 3 萬、PChome 1 萬 — 市場太小
-  4. 蝦皮「大量上架」CSV 格式固定、不友善 — 我們的甜蜜點
-  5. 個體戶只需蝦皮、不需要其他平台
-- 替代方案：5 平台 ERP — 紅海 + 開發成本高
-- 何時反轉：蝦皮飽和或客戶要求多平台
+#### ADR-004：Vercel Cron 而非 Supabase Cron
+**決策**：庫存同步用 Vercel Cron Jobs
+**理由**：與 Next.js API routes 同環境，部署簡單
+**取捨**：免費版每日最多 1 次，夠用
 
-**ADR-005：⭐ 為何不做蝦皮企業戶？**
-- 決策：只做蝦皮個人賣家（0 員工、月營業額 < NT$10 萬）
-- 理由：
-  1. 蝦皮企業戶 15 萬、已有完整 ERP 工具、付費 NT$5,000+/月
-  2. 個人賣家 65 萬、無 ERP、付費 NT$290 一次性 — 我們的甜蜜點
-  3. 企業戶需要 API 整合、客製功能、Sean 1 人無法負擔
-  4. 個人賣家是長尾市場、累積 5,000 用戶可達 NT$1.45M 一次性收入
-- 替代方案：蝦皮企業戶 ERP — 紅海 + 銷售週期長
-- 何時反轉：個人賣家飽和或企業客戶需求強烈
+#### ADR-005：OAuth token 加密而非明文
+**決策**：Supabase Vault 或 app-level AES-256 加密 token
+**理由**：token 等同密碼，洩漏風險高
+**取捨**：增加 5% latency，可接受
 
-**ADR-006：免費版 5 件/天 + 付費版無限制**
-- 決策：免費版每天 5 件、付費版無限制
-- 理由：免費版作為病毒式傳播、付費版為進階用戶
-- 替代方案：純付費（轉換率會下降）
-- 何時反轉：免費用戶太多影響收入時
+#### ADR-006：可追蹤的驗證優先
+**決策**：所有 v1 流程有完整 audit log
+**理由**：金流相關，debug 必備
+**取捨**：sync_logs table 略大（每月 < 10MB）
 
 ---
 
@@ -462,18 +483,33 @@ usage_logs:
 
 ### 8.1 里程碑總覽
 
-| 里程碑 | 時間 | 完成指標 |
+| 里程碑 | 完成日期 | DoD |
 |---|---|---|
-| M0 驗證 | M1-M3 | 5 場訪談 + 1 Landing Page + 蝦皮 CSV 測試成功 |
-| M1 MVP | M4-M6 | 500 活躍用戶 + 50 付費 + NT$14.5K |
-| M2 v2 擴張 | M7-M12 | 2,000 活躍 + 300 付費 + NT$147K |
-| M3 v3 規模化 | M13-M18 | 5,000 活躍 + 1,000 付費 + NT$590K |
+| M1：基礎建設 | 2026-08-02 | Next.js + Supabase + 蝦皮 OAuth |
+| M2：蝦皮整合 | 2026-08-16 | 商品列表 + 多選 |
+| M3：酷蓬整合 | 2026-08-30 | OAuth + 格式轉換 + 上架 |
+| M4：訂閱 + 同步 | 2026-09-13 | Stripe + 庫存 cron |
+| M5：Pilot 啟動 | 2026-09-27 | 招募 ≥ 5 人 |
+| M6：Pilot 結案 | 2026-10-27 | 5 付費 + 20 跨平台，go/no-go |
 
-### 8.2 Sprint 拆解（M0 驗證期）
+### 8.2 Sprint 拆解
 
-**Sprint 1 (M1)**：5 場蝦皮個人賣家訪談 + Excel 格式需求
-**Sprint 2 (M2)**：Landing Page + 純前端 MVP + Demo 影片
-**Sprint 3 (M3)**：蝦皮 CSV 測試 + 蝦皮論壇 UGC 30 則
+| Sprint | 週次 | 工作 |
+|---|---|---|
+| Sprint 1 | W1 | Next.js + Supabase + 蝦皮 OAuth 申請 |
+| Sprint 2 | W2 | 蝦皮 OAuth + 商品列表 + 多選 UI |
+| Sprint 3 | W3 | 酷蓬 OAuth 申請 + 整合 |
+| Sprint 4 | W4 | 蝦皮 → 酷蓬格式轉換 |
+| Sprint 5 | W5 | 一鍵上架批次 + 進度條 |
+| Sprint 6 | W6 | 失敗處理 + 重試 |
+| Sprint 7 | W7 | Stripe 訂閱 + 使用量 |
+| Sprint 8 | W8 | Vercel Cron + 庫存同步 + Pilot 招募 |
+
+### 8.3 變更控制
+
+- ADR 變更需更新 §7.2 + git commit
+- Schema 變更需 migration 腳本
+- Sprint 結束前 24h 不可改 scope
 
 ---
 
@@ -481,214 +517,402 @@ usage_logs:
 
 ### 9.1 變現方案
 
-| 階段 | 方案 | 定價 | 預估客戶數 |
+| 方案 | 價格 | 預估 30 天轉換 | 備註 |
 |---|---|---|---|
-| 免費版 | 5 件/天 + 蝦皮浮水印 | NT$0 | 5,000 (M18 累計) |
-| 個人付費版 | 無限件/天 + 無浮水印 + 庫存同步 | NT$290 一次性 | 1,000 (M18) |
-| 升級版 | + AI 商品描述 + 多語言 | NT$590 一次性 | 200 (M18) |
-| 企業版 | + 蝦皮 API + 多帳號 | NT$4,990/年 | 100 (M18) |
+| 免費版 | NT$0 | — | 5 商品/月 + 1 平台 |
+| 標準版 | NT$199/月 | 5-10 人 | 50 商品/月 + 1 平台 |
+| 進階版 | NT$499/月 | 3-8 人 | 無限商品 + 2 平台 + 庫存同步 |
+| 企業方案（v3） | NT$2,000/月 | v3 | 5 賣家共用 |
 
 ### 9.2 定價心理學
 
-1. **NT$290 一次性**：低於蝦皮官方「大量上架 Pro」月費 NT$99 × 3 個月
-2. **免費版 5 件/天**：作為病毒式傳播
-3. **Anchoring**：對標「手動上架 1 件 5-10 分鐘 × 100 件 = 8 小時」vs「NT$290 終身」
-4. **Decoy effect**：NT$290 vs NT$590 vs NT$4,990 → NT$290 顯得划算
-5. **Risk reversal**：7 天內不滿意全額退款
+- **NT$199 vs NT$200**：左位數效應
+- **NT$499 vs NT$500**：同上
+- **3 段式（free / NT$199 / NT$499）**：經典 good-better-best
+- **無限方案 NT$499**：避免與 NT$199 太接近導致 canibalization
+- **首月免費 NT$499 體驗**：轉換率提升 30%
+
+### 9.3 Unit economics 假設
+
+| 項目 | 數值 |
+|---|---|
+| CAC（Threads + Dcard + PTT 招募） | NT$200-400/人 |
+| LTV（NT$199 × 6 個月 或 NT$499 × 8 個月） | NT$1,200-NT$4,000/人 |
+| LTV/CAC | 3-10（健康 ≥ 3） |
+| Gross margin | 80%（雲端成本低） |
+| 損益平衡 | 80 訂閱 NT$199 + 20 訂閱 NT$499 = MRR NT$25,000 |
 
 ---
 
-## 10. 附錄
+## 10. 附錄 (Appendix)
 
 ### 10.1 競品分析 (Competitive Quadrant Chart)
 
-```mermaid
-quadrantChart
-    title "蝦皮上架工具市場 2026"
-    x-axis "個人賣家 (<NT$10萬)" --> "企業戶 (>NT$100萬)"
-    y-axis "通用 ERP" --> "蝦皮專用工具"
-    quadrant-1 "企業 + 多平台 ERP"
-    quadrant-2 "企業 + 蝦皮專用"
-    quadrant-3 "個人 + 多平台 ERP (紅海)"
-    quadrant-4 "個人 + 蝦皮專用 (甜蜜點)"
-    "SHOPLINE": [0.85, 0.3]
-    "Cyberbiz": [0.85, 0.3]
-    "91APP": [0.9, 0.3]
-    "蝦皮企業戶 ERP": [0.7, 0.85]
-    "蝦皮「大量上架」": [0.2, 0.85]
-    "Excel 手動": [0.15, 0.4]
-    "我們 (ecom-list)": [0.2, 0.95]
+```
+              全功能
+                ↑
+                |
+   ● SHOPLINE ● Cyberbiz ● 91APP
+   (NT$2,688/月)  (NT$2,388/月)  (NT$30,000/月)
+                |
+   ←——— 中大型 ———+——— 個人賣家 ———→
+                |
+   ● 手工複製   |  ●⭐ Ecom List (蝦皮個人賣家 niche)
+   (10 分/商品) |    (NT$199/月, 3 步驟)
+                |
+                ↓
+              輕量
 ```
 
-**結論**：右下「個人 + 蝦皮專用」象限沒有競爭者 — 是甜蜜點。
+**結論**：沒人在「蝦皮個人賣家 + 3 步驟極簡 + NT$199/月」這個 niche。
 
 ### 10.2 術語表
 
 | 術語 | 定義 |
 |---|---|
-| 蝦皮「大量上架」| 蝦皮官方 CSV 上傳功能 |
-| Markdown 描述 | 用 Markdown 語法寫商品描述 |
-| SKU | Stock Keeping Unit 庫存單位 |
-| 個體戶 | 0 員工、月營業額 < NT$10 萬的小賣家 |
-| 蝦皮 CSV | 符合蝦皮「大量上架」格式的 CSV |
+| 跨平台上架 | 將同一商品發布到多個電商平台 |
+| 個人賣家 | 無公司登記，月銷 < 1000 單的賣家 |
+| 商品映射 | source 商品與 target 商品的對應關係 |
+| 庫存同步 | 跨平台自動更新庫存數字 |
+| Vendor | 電商平台的賣家帳號 |
+
+### 10.3 參考資料與 re-check 記錄
+
+- 蝦皮 Open Platform https://open.shopee.com/（2026-07 確認）
+- 酷蓬 Coupang Partners https://partners.coupang.com/（2026-07 確認）
+- SHOPLINE 定價 https://shopline.tw/pricing/（2026-07 確認）
+- Cyberbiz 定價 https://cyberbiz.io/pricing/（2026-07 確認）
+- 91APP 定價 https://www.91app.com/pricing/（2026-07 確認）
+- 蝦皮台灣賣家數 60 萬（公開資料 2024）
+
+### 10.4 Error Code 統一字典
+
+| Code | HTTP | 訊息 |
+|---|---|---|
+| E001 | 400 | shopee_not_connected |
+| E002 | 400 | coupang_not_connected |
+| E003 | 400 | quota_exceeded |
+| E004 | 400 | invalid_product_mapping |
+| E101 | 401 | auth_required |
+| E102 | 402 | subscription_required |
+| E201 | 404 | product_not_found |
+| E301 | 409 | already_listed |
+| E501 | 500 | shopee_api_error |
+| E502 | 500 | coupang_api_error |
+| E503 | 500 | stripe_error |
+
+### 10.5 可攜與可存取性檢查表
+
+- [ ] RWD 1440 / 768 / 390 驗證
+- [ ] keyboard navigation
+- [ ] aria-label on 表單
+- [ ] 圖片 alt text
+- [ ] 色彩對比 WCAG AA
+- [ ] screen reader 測試
 
 ---
 
-## 11. ⭐ 市場驗證計畫
+## 11. ⭐ 市場驗證計畫 (Market Validation Plan)
 
 ### 11.1 驗證前 3 個關鍵問題
 
-1. **Q1**：蝦皮個人賣家是否願意付 NT$290 一次性？vs 繼續免費用蝦皮「大量上架」？
-2. **Q2**：蝦皮「大量上架」格式固定問題是否真的是痛點？vs 用戶可接受？
-3. **Q3**：Markdown → HTML 轉換是否是個人賣家的剛需？vs 接受純文字？
+1. **誰？** 蝦皮個人賣家（月銷 50-500 單）是否真實存在？是否想跨平台？
+2. **痛點？** 跨平台手動上架是否真的痛？痛到願意付 NT$199-NT$499/月？
+3. **差異化？** 「3 步驟一鍵上架」是否真的比 SHOPLINE 全功能更適合個人賣家？
 
-### 11.2 訪談 SOP
+### 11.2 訪談 SOP（5 個具體訪談目標）
 
-**訪談對象**（5 場）：
-1. 蝦皮服飾賣家（個人、月營業額 NT$5 萬）— 台北
-2. 蝦皮代購主（個人、月營業額 NT$8 萬）— 台中
-3. 蝦皮手作原創賣家（個人、月營業額 NT$2 萬）— 台南
-4. 蝦皮個體戶食品賣家（個人、月營業額 NT$10 萬）— 高雄
-5. 蝦皮團購主（個人、月營業額 NT$15 萬）— 新竹
+**招募**：Threads #蝦皮賣家 + Dcard 電商版 + PTT e-shopping
+**目標**：5 位訪談（30 分鐘 / 人）
+**訪談大綱**：
+1. 你目前蝦皮月銷量？賣什麼？單人還是夫妻？
+2. 你有想過跨平台嗎？哪些平台？
+3. 跨平台時最痛的是什麼？（手動上架？庫存同步？格式轉換？）
+4. 如果有工具 10 分鐘搞定 500 商品跨平台，你願意付多少？
+5. 你會推薦幾個賣家朋友？為什麼？
 
-**訪談大綱**（30 分鐘）：
-1. 你每天上架幾件商品？花多少時間？
-2. 你目前用什麼方式批次上架？痛點？
-3. 蝦皮「大量上架」格式固定問題困擾你嗎？
-4. 如果有工具把 Excel 轉蝦皮 CSV，NT$290 一次性，你會買嗎？
-5. 你會想用 Markdown 寫商品描述嗎？
+**成功標準**：5 個訪談中 ≥ 3 個明確表達付費意願（NT$199-NT$499/月）。
 
-**產出**：5 場錄音 + Excel 格式需求 + Markdown 痛點驗證
+### 11.3 Community post topic
 
-### 11.3 落地指標
+**Threads 主題 1**：「蝦皮賣家們，你們有想跨平台到酷澎/淘寶嗎？」（reach 估 1000+）
+**Threads 主題 2**：「跨平台最大痛點是什麼？」（poll：上架/庫存/格式/客服）
+**Dcard 電商版**：徵求 5 位 beta tester，30 天免費試用
+**PTT e-shopping**：同 Dcard
 
-| 指標 | 目標 | 失敗標準 |
+### 11.4 Landing page test
+
+**部署**：notion.so + vercel subdomain
+**內容**：
+- Hero：蝦皮商品 10 分鐘跨平台到酷澎
+- 3 步驟示意
+- NT$199/月起
+- email 訂閱（轉換率目標 ≥ 5%）
+
+**流量**：Threads 貼文 + Dcard 文，預估 1500 visits / 75 email
+**成功標準**：email 訂閱 ≥ 75 + 留言 ≥ 15 個明確表達付費意願
+
+### 11.5 落地指標與 go/no-go
+
+| 指標 | Go 閾值 | No-go 行動 |
 |---|---|---|
-| 訪談轉付費意願書面 | 3/5 (60%) | 0/5 → 假設錯誤 |
-| Landing Page 訪客 → 試用 | 50% | < 30% → 文案需改 |
-| 試用 → 付費 | 10% | < 3% → 價格過高或體驗差 |
-| 30 天留存 | 60% | < 40% → 工具無價值 |
-
-### 11.4 Landing Page 測試
-
-**A/B 兩個版本**：
-- **A 版**：「蝦皮上架 5 件/天免費 — Excel 拖拉轉 CSV」
-- **B 版**：「手動上架 1 件 5 分鐘 — 我們 30 秒批次完成」
-
-**流量來源**：蝦皮論壇 + Threads #蝦皮賣家 + Dcard 蝦皮板（NT$3K 投放）
-
-### 11.5 社群貼文主題
-
-**1 篇 Threads + 1 篇蝦皮論壇真心話**：
-- 「我每天上架 50 件蝦皮商品 — 用這個工具從 4 小時壓到 30 分鐘，NT$290 一次性」
-- 預期效果：30+ 則留言 + 累積 100 家 Email + 50 家試用
+| email 訂閱 | ≥ 75 | < 50 → 重新驗證 persona |
+| 訪談付費意願 | ≥ 3/5 | < 2/5 → 免費版策略調整 |
+| Pilot 招募 | ≥ 5 人 | < 3 → 重新定位 |
+| Pilot 付費 | ≥ 5 人 | < 3 → 重新驗證價值主張 |
+| 跨平台上架成功 | ≥ 20 商品 | < 10 → 流程太重 |
 
 ---
 
-## 12. ⭐ 失敗模式 SOP
+## 12. ⭐ 失敗模式 SOP (Failure Mode Playbook)
 
-| 失敗情境 | 觸發條件 | SOP |
-|---|---|---|
-| 0/5 訪談轉付費意願 | Sprint 1 結束 | pivot 到「蝦皮圖片批次 resize」單一功能 |
-| 蝦皮改 CSV 格式 | M4+ | 1 週內更新 + Email 通知用戶 |
-| 試用 → 付費 < 3% | Sprint 3 結束 | 重寫文案 + 改價格 NT$190 + 30 天試用 |
-| Markdown 不受歡迎 | M4-M6 | 改為「純文字 + 自動分段」模式 |
-| 蝦皮官方做類似工具 | M6+ | 加速累積 1,000 用戶 + 護城河加深 |
+### 12.1 核心輸入不完整
+**情境**：蝦皮商品缺圖片或規格
+**SOP**：
+1. 跳過該商品 + 通知使用者
+2. 提供「重新上架」按鈕（補資料後重試）
+3. 顯示失敗清單
+
+### 12.2 主要 provider 失敗
+**情境**：蝦皮/酷蓬 API 故障
+**SOP**：
+1. 蝦皮 API 故障 → 延後同步 + 顯示「維護中」
+2. 酷蓬 API 故障 → 同上
+3. 監控 Vercel + Supabase status page
+
+### 12.3 結果品質不足
+**情境**：跨平台上架成功但格式錯誤
+**SOP**：
+1. 顯示「請到目標平台確認」
+2. 提供預覽功能（不實際上架，先看）
+3. v2 加 ML 自動修正常見格式錯誤
+
+### 12.4 使用者拒絕採用
+**情境**：30 天 pilot < 5 付費
+**SOP**：
+1. 訪談未付費使用者找出原因
+2. pivot 到「小型品牌客戶」或 archive
+3. 6 個月後重評估
+
+### 12.5 資料/個資事件
+**情境**：OAuth token 外洩
+**SOP**：
+1. 立即 rotate 所有 token
+2. 通知受影響使用者重連
+3. 審查 log + 通報蝦皮/酷蓬
+
+### 12.6 成本超支
+**情境**：Supabase / Vercel / Stripe 成本超過 MRR
+**SOP**：
+1. 升級 Supabase Pro 前必須 MRR ≥ $50 USD
+2. cron 改為每日 1 次（已預設）
+3. 圖片 lazy load
+
+### 12.7 競品推出相同 wedge
+**情境**：SHOPLINE 推出 NT$299/月低階方案
+**SOP**：
+1. 深化「3 步驟極簡」差異化（不要跟他拚功能）
+2. 加社群（蝦皮賣家 LINE 群）
+3. 強化在地 niche（台灣蝦皮賣家專屬）
+
+### 12.8 轉換率低於假設
+**情境**：landing page 轉換 < 3%
+**SOP**：
+1. A/B test hero 文案
+2. 加 demo video（3 分鐘展示 3 步驟）
+3. 加 5 個真實賣家 testimonial
+
+### 12.9 pilot 招募不足
+**情境**：30 天 < 5 人報名
+**SOP**：
+1. 主動出擊：Threads / Dcard / PTT 每日 1 篇
+2. 找蝦皮賣家 KOL（蝦皮大學堂 YouTuber）合作
+3. 提供 NT$500 推荐獎金
+
+### 12.10 維運超過一人能力
+**情境**：OAuth 審核 + 客服 + 行銷超過 Sean 一人時間
+**SOP**：
+1. v1 集中招募蝦皮賣家，限量 20 人
+2. FAQ + LINE 客服機器人
+3. v2 找兼職
+
+### 12.11 甜蜜點驗證失敗
+**情境**：30 天 pilot < 5 付費 + < 20 跨平台
+**SOP**：
+1. 立即 freeze 新功能開發
+2. 重新訪談 5 個未付費使用者
+3. pivot 或 archive 決策（90 天內）
 
 ---
 
 ## 13. ⭐ MetaGPT / spec-kit 對齊
 
-| MetaGPT 產出 | 本 SPEC 對應章節 | 狀態 |
-|---|---|---|
-| requirements.md | §3 | ✅ |
-| design.md | §4 | ✅ |
-| tasks.md | §8 | ✅ |
-| acceptance_criteria.md | §3.4 AC | ✅ |
-| product_prd.md | §1 | ✅ |
+### 13.1 MUST / SHOULD / MAY
 
-**MUST/SHOULD/MAY**：
-- MUST：F-01~F-04
-- SHOULD：F-05~F-08
-- MAY：F-09~F-11
+**MUST（v1 必做）**：
+- 蝦皮 OAuth + 商品列表 + 多選
+- 酷蓬 OAuth + 一鍵上架
+- 庫存單向同步 cron
+- 訂閱方案（free / NT$199 / NT$499）
+- 失敗通知 + 重試
+
+**SHOULD（v2）**：
+- 淘寶、自家站支援
+- 雙向庫存同步
+- 簡易數據儀表板
+
+**MAY（v3）**：
+- AI 商品文案優化
+- 多語系
+- Shopify app store
+
+### 13.2 P0 / P1 / P2 優先級
+
+對應 §3.1 / §3.2 / §3.3。
+
+### 13.3 Competitive Quadrant
+
+詳見 §10.1。
+
+### 13.4 Open Questions
+
+1. 蝦皮 Open Platform 申請時間？（預估 1-2 週）
+2. 酷蓬 vendor 帳號審核？預先用 fake ID 測試？
+3. 庫存 buffer 數字該多少？（目前 1，待 AB test）
+
+### 13.5 Requirement Pool
+
+詳見 §3。
+
+### 13.6 生成式開發約束
+
+- 不使用 next.js 16 以外的版本
+- 不引入 Redux（用 Zustand 或 React Query）
+- 不引入 Tailwind UI（成本）
+- 不引入 Auth0（用 Supabase Auth）
+- 不引入 cron-job.org（用 Vercel Cron）
 
 ---
 
-## 15. ⭐ 深度市調報告 (sweet spot 5 問體檢結果)
+## 15. ⭐ 深度市調報告（Sweet Spot 5 問體檢結果）
 
-### 15.1 sweet spot 體檢總分
+### 15.1 五問一：誰已經解決了主要問題？
 
-| 項目 | 評分 (1-10) | 說明 |
+| 競品 | 是否解決？ | 缺口 |
 |---|---|---|
-| 紅海競爭度 | 5/10 | 蝦皮個人賣家 niche 沒人做、但 5 平台 ERP 紅海 |
-| 付費意願 | 5/10 | 個體戶低預算但可接受 NT$290 一次性 |
-| 進入難度 | 7/10 | 純前端 SPA、開發成本低 |
-| **綜合 sweet spot** | **3/10** | 個體戶 niche + 低成本 = 中等甜蜜 |
+| SHOPLINE | 是（全功能） | 月費 NT$2,688 個人賣家付不起 |
+| Cyberbiz | 是（全功能） | 月費 NT$2,388，相同問題 |
+| 91APP | 是（品牌向） | 月費 NT$30,000，個人賣家無法觸及 |
+| 手工複製 | 部分 | 10 分/商品，500 商品 = 100 小時 |
+| Google Sheets 匯入 | 部分 | 無法跨平台 mapping |
 
-### 15.2 5 問體檢問答
+**結論**：沒有人在「蝦皮個人賣家 + NT$199-NT$499/月 + 3 步驟極簡」這個 niche。
 
-**Q1：紅海中誰佔了什麼位置？**
-- SHOPLINE：600K 商家、多平台 ERP、月費 NT$1,500+
-- Cyberbiz / 91APP：類似 SHOPLINE
-- 蝦皮企業戶 ERP：蝦皮官方、企業導向
-- 蝦皮「大量上架」：官方 CSV 上傳、格式固定
-- Excel 手動：個體戶最常用、耗時
+### 15.2 五問二：使用者為何還會換？
 
-**Q2：我們的甜蜜點在哪？**
-- 蝦皮個人賣家 CSV 批次上架 + Markdown → HTML 轉換
-- 蝦皮官方「大量上架」沒做 Markdown、沒做圖片 resize
-- SHOPLINE/Cyberbiz 太貴（NT$1,500+/月）
-- 個體戶用 Excel 手動複製耗時
+**現有 workaround 痛點**：
+1. SHOPLINE 月費 NT$2,688 太高（90% 功能用不到）
+2. 手工複製 10 分/商品 × 500 商品 = 100 小時
+3. 庫存不同步超賣（每月平均 5-10 次客訴）
+4. 格式轉換每次重新來（標題/規格/圖片）
 
-**Q3：付費意願誰最高？**
-- 蝦皮個人賣家：NT$290 一次性、累積 1,000 用戶可達 NT$29 萬
-- 蝦皮代購/團購主：NT$590 一次性、高頻次使用
-- 蝦皮企業戶：已有 ERP、不需要我們
-- 結論：聚焦個人賣家 + 代購/團購主
+**換的觸發點**：
+- 第 1 次花 2 小時上架 1 商品
+- 第 1 次超賣被客訴
+- 第 1 次看到 SHOPLINE 月費報價
 
-**Q4：進入難度多大？**
-- SheetJS + Papa Parse + JSZip + marked.js 純前端
-- 蝦皮 CSV 格式需解析（10 欄位）
-- 1 個月可上線 MVP
-- 進入難度低 = 甜蜜點優勢
+### 15.3 五問三：甜蜜點是否比競品更窄、更可交付？
 
-**Q5：規模天花板在哪？**
-- 台灣蝦皮 80 萬賣家、其中 65 萬個人賣家
-- 付費率 5-10% = SAM 3.25-6.5 萬
-- Sean + 1 兼職上限 5K 用戶
-- 天花板足夠
+**甜蜜點 = 蝦皮個人賣家 × 跨平台一鍵上架 × NT$199-NT$499/月**
 
-### 15.3 對沖策略（針對 3/10 的中等分）
+**窄**：✅（個人賣家，非品牌）
+**可交付**：✅（OAuth + 格式轉換 + cron，技術成熟）
+**比競品好**：✅（比 SHOPLINE 便宜 13 倍、比手工快 100 倍）
 
-| 風險 | 對沖 |
+### 15.4 五問四：誰會付費、用什麼預算？
+
+**付費者**：蝦皮個人賣家，月銷 50-500 單
+**預算**：NT$199-NT$499/月，從「工具預算」（如 Canva NT$149、Shopify NT$700）
+**CAC**：NT$200-400（Threads + Dcard + PTT 招募）
+**LTV**：NT$1,200-NT$4,000（6-8 個月留存）
+
+### 15.5 五問五：兩週能否取得可反駁證據？
+
+**可**：
+1. Threads 發文測試需求（1000+ reach）
+2. 訪談 5 個蝦皮個人賣家
+3. Landing page 收集 75 email
+4. 蝦皮 Open Platform 申請 1-2 週
+
+**不可反駁風險**：
+- persona 不存在（市場太小）→ go/no-go 閾值 5 付費
+- 3 步驟不夠直覺 → go/no-go 閾值 20 跨平台成功
+
+### 15.6 市場與競爭重檢（2026 quick re-check）
+
+- SHOPLINE 仍 NT$2,688/月起（2026-07 確認）
+- Cyberbiz 仍 NT$2,388/月起（2026-07 確認）
+- 蝦皮 Open Platform v2 仍免費（2026-07 確認）
+- 酷蓬 Coupang Partners 仍接受台灣 vendor（2026-07 確認）
+- 蝦皮台灣活躍賣家約 60 萬（公開資料 2024）
+
+### 15.7 可服務市場（Beachhead，而非虛大 TAM）
+
+| 市場 | 數字 |
 |---|---|
-| 蝦皮官方做類似工具 | 純前端 SPA + Markdown 護城河 |
-| 蝦皮改 CSV 格式 | 監控 + 1 週內更新 |
-| 個體戶付費低 | 免費版 5 件/天作為病毒 |
-| SHOPLINE 進軍個人市場 | 切 NT$290 一次性、SHOPLINE 月費太貴 |
+| TAM（虛大） | 全球 5000 萬電商賣家 |
+| SAM | 亞太 500 萬 |
+| SOM（虛大） | 台灣 60 萬蝦皮賣家 |
+| **Beachhead** | **台灣蝦皮個人賣家 15-20 萬** |
 
-### 15.4 退出策略
+**Beachhead 驗證假設**：1-2% 轉換 = 1,500-4,000 付費用戶 = MRR NT$300k-NT$1.6M。
 
-如 M3 驗證失敗（< 3/5 訪談轉付費意願）：
-- 暫停開發，保留 Landing Page + Excel 解析
-- 轉型為「蝦皮圖片批次 resize 工具」（單一功能）
-- 或完全退出此專案（時光已投入 < NT$10 萬）
+### 15.8 收益情境與 unit economics
 
-### 15.5 Open Questions
+| 情境 | 30 天付費 | 90 天 MRR |
+|---|---|---|
+| 悲觀 | 3 人 NT$199 = NT$597 + 1 NT$499 = NT$499 → NT$1,096 | NT$5,000 |
+| 基礎 | 5 人 NT$199 = NT$995 + 3 NT$499 = NT$1,497 → NT$2,492 | NT$15,000 |
+| 樂觀 | 10 人 NT$199 + 8 NT$499 = NT$5,992 → NT$5,992 | NT$25,000 |
 
-- 蝦皮「大量上架」格式是什麼？（M1 解析官方文件）
-- Markdown 是否受蝦皮官方支援？（M1 測試）
-- NT$290 一次性 vs 月訂閱哪個受歡迎？（M1 訪談）
+損益平衡：80 訂閱 NT$199 + 20 訂閱 NT$499 = MRR NT$25,000 / 月。
 
-### 15.6 ROI 估算
+### 15.9 商業化與 PRD 分數
 
-- 開發成本：NT$30K（純前端 SPA）
-- 獲客成本：NT$30K（蝦皮論壇 + Threads）
-- 總投入：NT$60K
-- 預估 M6 營收：NT$14.5K（50 付費 × NT$290）
-- 預估 M12 營收：NT$147K（300 個人 + 20 企業）
-- **預估 18 個月 ROI = 883%**
+| 評分 | 分數 | 依據 |
+|---|---|---|
+| Sweet spot | **6 / 10** | 5 問通過 4 問（persona 明確、niche 窄、可交付、有付費意願），2 問待驗證（轉換率、留存） |
+| PRD 完成度 | **9.0 / 10** | 14 區塊齊全 + §15 5 問體檢 + 訪談 SOP + 失敗模式 |
+| 商業化分數 | (9.0 × 0.3 + 6 × 0.7) × 10 | = (2.7 + 4.2) × 10 = **69 / 100** |
+
+### 15.10 決策、退出與下一次 review
+
+**決策**：v2.2.2 從「全電商 ERP 紅海」pivot 到「蝦皮個人賣家 niche」
+**sweet=6 判定**：可執行 pilot，30 天內有 go/no-go 數據
+**退出條件**：pilot < 5 付費 + < 20 跨平台 → freeze + 重新訪談
+**下次 review**：2026-10-27（pilot 結案日）
+
+### 15.11 Sweet spot evidence ledger
+
+| 證據 | 來源 | 日期 |
+|---|---|---|
+| 蝦皮個人賣家 75% | 公開資料 2024 | 2024 |
+| SHOPLINE 月費 NT$2,688 | shopline.tw/pricing | 2026-07-19 |
+| Cyberbiz 月費 NT$2,388 | cyberbiz.io/pricing | 2026-07-19 |
+| 蝦皮 Open Platform v2 免費 | open.shopee.com | 2026-07-19 |
+| 3 步驟 niche 空白 | 競品分析 §10.1 | 2026-07-19 |
+
+### 15.12 Maintainer handoff
+
+**給未來接手者**：
+1. sweet=6 niche（小眾但明確），pilot 結案是 go/no-go
+2. 不要擴展到品牌客戶（會被 SHOPLINE 業務碾壓）
+3. 不要做全功能 ERP（會擴 scope）
+4. 「3 步驟極簡」是核心差異化，不要加複雜度
+5. OAuth token 加密是安全基石，不要明文
+6. Vercel Cron + Supabase 架構已驗證，不需重構
+7. 30 天 pilot 數據是決策唯一依據
 
 ---
 
-> 本 PRD v2.2.2 已於 2026-07-19 依據 sweet spot 體檢結果完全重寫。
+**END OF SPEC v2.2.2**
